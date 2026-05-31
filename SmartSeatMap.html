@@ -1,0 +1,400 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);color:var(--color-text-primary);background:transparent}
+.wrap{padding:1rem 0}
+.topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.stats{display:flex;gap:6px;flex-wrap:wrap}
+.stat{padding:4px 12px;border-radius:var(--border-radius-md);font-size:12px;font-weight:500}
+.s-e{background:#EAF3DE;color:#27500A}
+.s-o{background:#FCEBEB;color:#791F1F}
+.s-r{background:#FAEEDA;color:#633806}
+.s-m{background:#E6F1FB;color:#0C447C}
+.s-t{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.legend{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-secondary)}
+.leg-box{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.floor-wrap{background:#F5F4F0;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:10px;margin-bottom:12px;overflow-x:auto}
+canvas{display:block;margin:0 auto;cursor:pointer;max-width:100%}
+.info-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px;margin-bottom:12px}
+.info-title{font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:6px}
+.info-body{font-size:13px;color:var(--color-text-secondary)}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+button{padding:6px 14px;font-size:12px;cursor:pointer;border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);border-radius:var(--border-radius-md);transition:background 0.12s}
+button:hover:not(:disabled){background:var(--color-background-secondary)}
+button:disabled{opacity:0.35;cursor:not-allowed}
+button.primary{background:#EEEDFE;color:#3C3489;border-color:#AFA9EC}
+button.success{background:#EAF3DE;color:#27500A;border-color:#97C459}
+button.warn{background:#FAEEDA;color:#633806;border-color:#FAC775}
+button.danger{background:#FCEBEB;color:#791F1F;border-color:#F7C1C1}
+.modal-bg{min-height:300px;background:rgba(0,0,0,0.32);display:flex;align-items:center;justify-content:center;border-radius:var(--border-radius-lg);margin-bottom:12px}
+.modal{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:18px;width:270px}
+.modal h3{font-size:14px;font-weight:500;margin-bottom:6px}
+.modal-sub{font-size:11px;color:var(--color-text-secondary);margin-bottom:10px;line-height:1.5}
+.modal input{width:100%;margin-bottom:8px;padding:7px 10px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary)}
+.modal-btns{display:flex;gap:6px}
+.badge{display:inline-block;padding:2px 7px;border-radius:var(--border-radius-md);font-size:11px;font-weight:500}
+.timer-bar{height:4px;border-radius:2px;background:var(--color-background-secondary);margin-top:6px;overflow:hidden}
+.timer-fill{height:100%;transition:width 1s linear}
+.bpmn-note{font-size:10px;color:var(--color-text-secondary);background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:4px 8px;margin-top:8px;border-left:2px solid #7F77DD}
+.flow-steps{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.flow-step{font-size:10px;padding:2px 7px;border-radius:var(--border-radius-md);font-weight:500}
+.flow-arrow{font-size:10px;color:var(--color-text-secondary)}
+.flow-active{background:#EEEDFE;color:#3C3489;border:1px solid #AFA9EC}
+.flow-done{background:#EAF3DE;color:#27500A}
+.flow-next{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+</style>
+
+<div class="wrap">
+<h2 class="sr-only">Akıllı Kütüphane Smart Seat Map — Bpmn Tabanlı Rezervasyon Sistemi</h2>
+
+<div class="topbar">
+  <div class="stats">
+    <span class="stat s-e" id="s-empty">Boş: 0</span>
+    <span class="stat s-r" id="s-res">Rezerve: 0</span>
+    <span class="stat s-o" id="s-occ">Dolu: 0</span>
+    <span class="stat s-m" id="s-mol">Molada: 0</span>
+    <span class="stat s-t" id="s-total">Toplam: 0</span>
+  </div>
+  <div class="legend">
+    <div class="leg"><div class="leg-box" style="background:#EAF3DE;border:1px solid #3B6D11"></div>Boş</div>
+    <div class="leg"><div class="leg-box" style="background:#FAEEDA;border:1px solid #854F0B"></div>Rezerve</div>
+    <div class="leg"><div class="leg-box" style="background:#FCEBEB;border:1px solid #A32D2D"></div>Dolu</div>
+    <div class="leg"><div class="leg-box" style="background:#E6F1FB;border:1px solid #185FA5"></div>Molada</div>
+    <div class="leg"><div class="leg-box" style="background:#EEEDFE;border:2px solid #7F77DD"></div>Seçili</div>
+  </div>
+</div>
+
+<div class="floor-wrap">
+  <canvas id="map" width="620" height="620"></canvas>
+</div>
+
+<div class="info-card">
+  <div class="info-title">Masa bilgisi</div>
+  <div class="info-body" id="info-body">Harita üzerinden bir masaya tıklayın.</div>
+  <div id="flow-area" style="display:none">
+    <div class="flow-steps" id="flow-steps"></div>
+  </div>
+  <div id="timer-area" style="display:none">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--color-text-secondary);margin-top:8px">
+      <span id="timer-label"></span><span id="timer-val"></span>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+  </div>
+  <div id="bpmn-note" class="bpmn-note" style="display:none"></div>
+</div>
+
+<div class="actions" id="action-bar">
+  <button class="primary"  id="btn-res"    onclick="openModal()" disabled>Rezervasyon yap</button>
+  <button class="success"  id="btn-qr"     onclick="qrDogrula()" disabled>QR / Kart doğrula → Dolu</button>
+  <button class="warn"     id="btn-mola"   onclick="startMola()" disabled>Mola başlat</button>
+  <button class="primary"  id="btn-geri"   onclick="geriDon()"   disabled>Geri dön</button>
+  <button                  id="btn-bosalt" onclick="bosalt()"    disabled>Masayı boşalt</button>
+  <button class="danger"   id="btn-cancel" onclick="iptalEt()"   disabled>Rezervasyonu iptal et</button>
+</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+  <button onclick="simulateRandom()">Simüle et</button>
+  <button onclick="resetAll()">Sıfırla</button>
+</div>
+
+<div id="modal-area" style="display:none">
+  <div class="modal-bg">
+    <div class="modal">
+      <h3 id="modal-title">Rezervasyon</h3>
+      <div class="modal-sub" id="modal-sub"></div>
+      <input type="text"   id="m-name" placeholder="Ad soyad" />
+      <input type="text"   id="m-id"   placeholder="Öğrenci no" />
+      <input type="number" id="m-time" placeholder="Süre (dk)" min="15" max="120" value="60"/>
+      <div class="modal-btns">
+        <button class="primary" onclick="confirmModal()">Onayla</button>
+        <button onclick="closeModal()">İptal</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const C=document.getElementById('map'),ctx=C.getContext('2d');
+const W=620,H=620,CX=W/2,CY=H/2;
+
+const PAL={
+  empty:   {fill:'#EAF3DE',stroke:'#3B6D11',text:'#27500A'},
+  occupied:{fill:'#FCEBEB',stroke:'#A32D2D',text:'#791F1F'},
+  reserved:{fill:'#FAEEDA',stroke:'#854F0B',text:'#633806'},
+  mola:    {fill:'#E6F1FB',stroke:'#185FA5',text:'#0C447C'},
+  selected:{fill:'#EEEDFE',stroke:'#7F77DD',text:'#3C3489'},
+};
+
+const FLOW={
+  empty:   [{q:'q0',label:'Boş'},{q:'→'},{q:'q1',label:'Talep?'}],
+  reserved:[{q:'q0',done:true},{q:'→'},{q:'q1',done:true},{q:'→'},{q:'q3',label:'Rezerve',active:true},{q:'→'},{q:'q5',label:'QR bekl.'}],
+  occupied:[{q:'q0',done:true},{q:'→'},{q:'q3',done:true},{q:'→'},{q:'q5',done:true},{q:'→'},{q:'q7',label:'Aktif',active:true}],
+  mola:    [{q:'q7',done:true},{q:'→'},{q:'q8',label:'Mola',active:true},{q:'→'},{q:'q6/q9',label:'Dön/Aşım'}],
+};
+
+const BPMN={
+  empty:   'q0: Başlangıç — rezervasyon talebi alınabilir',
+  reserved:'q3: Rezerve edildi — 15 dk içinde QR/Kart doğrulaması yapılmalı (Timer Boundary Event)',
+  occupied:'q7: Aktif kullanım — mola başlatılabilir veya masa boşaltılabilir',
+  mola:    'q8: Mola süreci — 30 dk içinde geri dönülmezse masa otomatik boşalır (q8→q9)',
+};
+
+const ICONS={empty:'',reserved:'◆',occupied:'▲',mola:'⏸'};
+
+let seats={},selected=null,timers={};
+
+function makeSeat(id,x,y,w,h,state,group){
+  seats[id]={id,x,y,w:w||38,h:h||38,state,group,reservation:null,timerStart:null,timerMax:null};
+}
+
+function initLayout(){
+  seats={}; clearAllTimers();
+  const S=38,G=5;
+  const corners=[
+    {name:'A',ox:18,oy:18},
+    {name:'B',ox:W-18-4*(S+G)+G,oy:18},
+    {name:'C',ox:18,oy:H-18-4*(S+G)+G},
+    {name:'D',ox:W-18-4*(S+G)+G,oy:H-18-4*(S+G)+G},
+  ];
+  let id=1;
+  corners.forEach(g=>{
+    for(let r=0;r<4;r++) for(let c=0;c<4;c++){
+      makeSeat('M'+String(id).padStart(2,'0'),g.ox+c*(S+G),g.oy+r*(S+G),S,S,'empty',g.name);
+      id++;
+    }
+  });
+  const R=90,n=12;
+  for(let i=0;i<n;i++){
+    const a=(2*Math.PI*i/n)-Math.PI/2;
+    makeSeat('M'+String(id).padStart(2,'0'),CX+(R+30)*Math.cos(a)-19,CY+(R+30)*Math.sin(a)-19,38,38,'empty','E');
+    id++;
+  }
+}
+
+function clearAllTimers(){Object.values(timers).forEach(t=>clearInterval(t));timers={};}
+
+function drawFloor(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#F0EEE8'; ctx.fillRect(0,0,W,H);
+  const edge=18+4*43;
+  ctx.fillStyle='#E8E6E0';
+  ctx.fillRect(edge,0,W-2*edge,H);
+  ctx.fillRect(0,edge,W,H-2*edge);
+  ctx.fillStyle='#EBF2FA';
+  ctx.beginPath(); ctx.arc(CX,CY,125,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#85B7EB'; ctx.lineWidth=0.8;
+  ctx.setLineDash([5,5]); ctx.beginPath(); ctx.arc(CX,CY,90,0,Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+  const glabels=[{t:'Bölüm A',x:18+86,y:14},{t:'Bölüm B',x:W-18-86,y:14},{t:'Bölüm C',x:18+86,y:H-6},{t:'Bölüm D',x:W-18-86,y:H-6}];
+  ctx.fillStyle='#5F5E5A'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center';
+  glabels.forEach(l=>ctx.fillText(l.t,l.x,l.y));
+}
+
+function drawSeat(s){
+  const isSel=s.id===selected;
+  const p=isSel?PAL.selected:PAL[s.state];
+  ctx.fillStyle=p.fill; ctx.strokeStyle=p.stroke; ctx.lineWidth=isSel?2:1;
+  ctx.beginPath(); ctx.roundRect(s.x,s.y,s.w,s.h,4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=p.text; ctx.font='bold 8px sans-serif'; ctx.textAlign='center';
+  ctx.fillText(s.id,s.x+s.w/2,s.y+s.h/2-2);
+  ctx.font='7px sans-serif';
+  ctx.fillText(ICONS[s.state]||'',s.x+s.w/2,s.y+s.h/2+8);
+}
+
+function render(){
+  drawFloor();
+  Object.values(seats).forEach(drawSeat);
+  updateStats();
+}
+
+function updateStats(){
+  const v=Object.values(seats);
+  document.getElementById('s-empty').textContent='Boş: '+v.filter(s=>s.state==='empty').length;
+  document.getElementById('s-res').textContent='Rezerve: '+v.filter(s=>s.state==='reserved').length;
+  document.getElementById('s-occ').textContent='Dolu: '+v.filter(s=>s.state==='occupied').length;
+  document.getElementById('s-mol').textContent='Molada: '+v.filter(s=>s.state==='mola').length;
+  document.getElementById('s-total').textContent='Toplam: '+v.length;
+}
+
+function getSeatAt(mx,my){
+  for(const s of Object.values(seats))
+    if(mx>=s.x&&mx<=s.x+s.w&&my>=s.y&&my<=s.y+s.h) return s;
+  return null;
+}
+
+C.addEventListener('click',e=>{
+  const rect=C.getBoundingClientRect();
+  const s=getSeatAt((e.clientX-rect.left)*(W/rect.width),(e.clientY-rect.top)*(H/rect.height));
+  selected=s?s.id:null;
+  s?showInfo(s):clearInfo();
+  render();
+});
+
+function showInfo(s){
+  const lbl={empty:'Boş',occupied:'Dolu',reserved:'Rezerve',mola:'Molada'};
+  const bg={empty:'#EAF3DE',occupied:'#FCEBEB',reserved:'#FAEEDA',mola:'#E6F1FB'};
+  const tc={empty:'#27500A',occupied:'#791F1F',reserved:'#633806',mola:'#0C447C'};
+  let html=`<span class="badge" style="background:${bg[s.state]};color:${tc[s.state]}">${lbl[s.state]}</span>
+    <span style="margin-left:8px;font-weight:500">${s.id}</span>
+    <span style="margin-left:6px;color:var(--color-text-secondary);font-size:11px">Bölüm ${s.group}</span>`;
+  if(s.reservation)
+    html+=`<div style="margin-top:6px;font-size:12px"><span style="font-weight:500;color:var(--color-text-primary)">${s.reservation.name}</span>
+    <span style="color:var(--color-text-secondary)"> — ${s.reservation.studentId} — ${s.reservation.duration}dk</span></div>`;
+  document.getElementById('info-body').innerHTML=html;
+
+  const fa=document.getElementById('flow-area');
+  const steps=FLOW[s.state];
+  if(steps){
+    fa.style.display='block';
+    document.getElementById('flow-steps').innerHTML=steps.map(step=>{
+      if(step.q==='→') return `<span class="flow-arrow">→</span>`;
+      const cls=step.active?'flow-step flow-active':step.done?'flow-step flow-done':'flow-step flow-next';
+      return `<span class="${cls}">${step.q}${step.label?' · '+step.label:''}</span>`;
+    }).join('');
+  } else { fa.style.display='none'; }
+
+  const ta=document.getElementById('timer-area');
+  if((s.state==='reserved'||s.state==='mola')&&s.timerStart){
+    ta.style.display='block'; updateTimerBar(s);
+  } else { ta.style.display='none'; }
+
+  document.getElementById('bpmn-note').style.display='block';
+  document.getElementById('bpmn-note').textContent='BPMN: '+BPMN[s.state];
+
+  document.getElementById('btn-res').disabled    = s.state!=='empty';
+  document.getElementById('btn-qr').disabled     = s.state!=='reserved';
+  document.getElementById('btn-mola').disabled   = s.state!=='occupied';
+  document.getElementById('btn-geri').disabled   = s.state!=='mola';
+  document.getElementById('btn-bosalt').disabled = s.state!=='occupied';
+  document.getElementById('btn-cancel').disabled = s.state!=='reserved';
+}
+
+function clearInfo(){
+  document.getElementById('info-body').textContent='Harita üzerinden bir masaya tıklayın.';
+  document.getElementById('flow-area').style.display='none';
+  document.getElementById('timer-area').style.display='none';
+  document.getElementById('bpmn-note').style.display='none';
+  ['btn-res','btn-qr','btn-mola','btn-geri','btn-bosalt','btn-cancel'].forEach(id=>document.getElementById(id).disabled=true);
+}
+
+function updateTimerBar(s){
+  const elapsed=(Date.now()-s.timerStart)/1000;
+  const pct=Math.max(0,Math.min(100,100*(1-elapsed/s.timerMax)));
+  const rem=Math.max(0,Math.round(s.timerMax-elapsed));
+  document.getElementById('timer-label').textContent=s.state==='reserved'?'QR doğrulama süresi (15dk)':'Mola süresi (30dk)';
+  document.getElementById('timer-val').textContent=Math.floor(rem/60)+'dk '+rem%60+'sn kaldı';
+  const fill=document.getElementById('timer-fill');
+  fill.style.width=pct+'%';
+  fill.style.background=pct>50?'#3B6D11':pct>20?'#BA7517':'#E24B4A';
+}
+
+function startTimerFor(s,maxSec,onExpire){
+  if(timers[s.id]) clearInterval(timers[s.id]);
+  s.timerStart=Date.now(); s.timerMax=maxSec;
+  timers[s.id]=setInterval(()=>{
+    const elapsed=(Date.now()-s.timerStart)/1000;
+    if(elapsed>=maxSec){clearInterval(timers[s.id]);delete timers[s.id];onExpire();return;}
+    if(selected===s.id) updateTimerBar(s);
+  },1000);
+}
+
+function openModal(){
+  if(!selected||seats[selected].state!=='empty') return;
+  const s=seats[selected];
+  document.getElementById('modal-title').textContent=selected+' için rezervasyon';
+  document.getElementById('modal-sub').textContent='Bölüm '+s.group+' — BPMN: q1→q3 (Rezervasyon onaylandı)\nArdından 15 dk içinde QR/kart doğrulaması yapılmalı.';
+  document.getElementById('m-name').value='';
+  document.getElementById('m-id').value='';
+  document.getElementById('m-time').value='60';
+  document.getElementById('modal-area').style.display='block';
+}
+
+function closeModal(){document.getElementById('modal-area').style.display='none';}
+
+function confirmModal(){
+  const name=document.getElementById('m-name').value.trim();
+  const sid=document.getElementById('m-id').value.trim();
+  const dur=parseInt(document.getElementById('m-time').value)||60;
+  if(!name||!sid){alert('Ad soyad ve öğrenci no zorunlu.');return;}
+  const s=seats[selected];
+  s.state='reserved';
+  s.reservation={name,studentId:sid,duration:dur};
+  startTimerFor(s,15*60,()=>{
+    if(seats[s.id]&&seats[s.id].state==='reserved'){
+      seats[s.id].state='empty'; seats[s.id].reservation=null; seats[s.id].timerStart=null;
+      render();
+      if(selected===s.id) showInfo(seats[s.id]);
+      alert(s.id+' — 15 dk doldu, rezervasyon iptal edildi (BPMN: q3→q4 Timeout)');
+    }
+  });
+  closeModal(); showInfo(s); render();
+}
+
+function qrDogrula(){
+  if(!selected||seats[selected].state!=='reserved') return;
+  const s=seats[selected];
+  if(timers[s.id]){clearInterval(timers[s.id]);delete timers[s.id];}
+  s.state='occupied';
+  s.timerStart=null; s.timerMax=null;
+  showInfo(s); render();
+}
+
+function startMola(){
+  if(!selected||seats[selected].state!=='occupied') return;
+  const s=seats[selected];
+  s.state='mola';
+  startTimerFor(s,30*60,()=>{
+    if(seats[s.id]&&seats[s.id].state==='mola'){
+      seats[s.id].state='empty'; seats[s.id].reservation=null; seats[s.id].timerStart=null;
+      render();
+      if(selected===s.id) clearInfo();
+      alert(s.id+' — 30 dk mola aşıldı, masa boşaltıldı (BPMN: q8→q9)');
+    }
+  });
+  showInfo(s); render();
+}
+
+function geriDon(){
+  if(!selected||seats[selected].state!=='mola') return;
+  if(timers[selected]){clearInterval(timers[selected]);delete timers[selected];}
+  const s=seats[selected];
+  s.state='occupied'; s.timerStart=null; s.timerMax=null;
+  showInfo(s); render();
+}
+
+function bosalt(){
+  if(!selected||seats[selected].state!=='occupied') return;
+  if(timers[selected]){clearInterval(timers[selected]);delete timers[selected];}
+  const s=seats[selected];
+  s.state='empty'; s.reservation=null; s.timerStart=null;
+  showInfo(s); render();
+}
+
+function iptalEt(){
+  if(!selected||seats[selected].state!=='reserved') return;
+  if(timers[selected]){clearInterval(timers[selected]);delete timers[selected];}
+  const s=seats[selected];
+  s.state='empty'; s.reservation=null; s.timerStart=null;
+  showInfo(s); render();
+}
+
+function simulateRandom(){
+  Object.values(seats).forEach(s=>{
+    if(timers[s.id]){clearInterval(timers[s.id]);delete timers[s.id];}
+    const r=Math.random();
+    s.state=r<0.35?'empty':r<0.55?'occupied':r<0.75?'reserved':'mola';
+    s.reservation=(s.state!=='empty')?{name:'Öğrenci '+s.id,studentId:'2021'+Math.floor(Math.random()*9000+1000),duration:60}:null;
+    s.timerStart=null; s.timerMax=null;
+  });
+  selected=null; clearInfo(); render();
+}
+
+function resetAll(){
+  clearAllTimers();
+  Object.values(seats).forEach(s=>{s.state='empty';s.reservation=null;s.timerStart=null;s.timerMax=null;});
+  selected=null; clearInfo(); render();
+}
+
+initLayout(); render();
+</script>
